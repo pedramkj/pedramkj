@@ -1,0 +1,353 @@
+
+router-edge-3
+en
+conf t
+HOSTNAME ROUER-3-EDGE
+inter gig 0/1
+no shut
+ip address dhcp
+exit
+int gig 0/0
+no shut
+ip add 100.100.100.2 255.255.255.252
+
+
+en
+conf t
+ip access-list stand ped-company
+permit any
+exit
+int gig 0/1
+ip nat outside
+int gig 0/0
+ip nat inside
+exit
+ip nat inside source list ped-company interface gig 0/1
+do wr
+
+EN
+CONF T
+ROUTER ospf 1
+router-id 3.3.3.3
+network 100.100.100.0 0.0.0.3 area 0
+ROUTER ospf 1
+default-information originate
+
+do wr
+exit
+******************************************************
+router-edge-4
+en
+conf t
+HOSTNAME ROUER-4-EDGE
+inter gig 0/1
+no shut
+ip address dhcp
+exit
+int gig 0/0
+no shut
+ip add 200.200.200.2 255.255.255.252
+
+
+en
+conf t
+ip access-list stand ped-company
+permit any
+exit
+int gig 0/1
+ip nat outside
+int gig 0/0
+ip nat inside
+exit
+ip nat inside source list ped-company interface gig 0/1
+do wr
+
+EN
+CONF T
+ROUTER ospf 1
+router-id 4.4.4.4
+network 200.200.200.0  0.0.0.3 area 0
+default-information originate
+do wr
+exit
+
+
+=========================================================================================================
+
+ROUTER 1 :
+EN
+CONF T
+hostname router-1
+interface fa 0/0
+no shut
+ip add 100.100.100.1 255.255.255.252
+interface FA 0/1
+no shut 
+exit
+interface FA 0/1.2
+encapsulation dot1q 2 native
+ip add 10.10.10.2 255.255.255.0
+ip helper-address 10.10.10.4
+interface FA 0/1.10
+encapsulation dot1q 10
+ip add 192.168.10.2 255.255.255.0
+ip helper-address 10.10.10.4
+interface FA 0/1.20
+encapsulation dot1q 20
+ip add 192.168.20.2 255.255.255.0
+ip helper-address 10.10.10.4
+exit
+interface FA 0/1.2
+standby 2 ip 10.10.10.1
+standby 2 priority 101
+standby 2 preempt
+exit
+interface FA 0/1.10
+standby 10 ip 192.168.10.1
+standby 10 priority 101
+standby 10 preempt
+exit
+interface FA 0/1.20
+standby 20 ip 192.168.20.1
+standby 20 priority 100
+standby 20 preempt
+exit
+ROUTER ospf 1
+router-id 1.1.1.1
+network 100.100.100.0 0.0.0.3 area 0
+network 192.168.10.0 0.0.0.255 area 0
+network 192.168.20.0 0.0.0.255 area 0
+network 10.10.10.0 0.0.0.255 area 0
+
+**********************************************************************************************
+ROUTER 2 :
+EN
+CONF T
+hostname router-2
+interface fa 0/0
+no shut
+ip add 200.200.200.1 255.255.255.252
+interface FA 0/1
+no shut 
+exit
+interface FA 0/1.2
+encapsulation dot1q 2 native
+ip add 10.10.10.3 255.255.255.0
+ip helper-address 10.10.10.4
+interface FA 0/1.10
+encapsulation dot1q 10
+ip add 192.168.10.3 255.255.255.0
+ip helper-address 10.10.10.4
+interface FA 0/1.20
+encapsulation dot1q 20
+ip add 192.168.20.3 255.255.255.0
+ip helper-address 10.10.10.4
+exit
+interface FA 0/1.2
+standby 2 ip 10.10.10.1
+standby 2 priority 100
+standby 2 preempt
+exit
+interface FA 0/1.10
+standby 10 ip 192.168.10.1
+standby 10 priority 100
+standby 10 preempt
+exit
+interface FA 0/1.20
+standby 20 ip 192.168.20.1
+standby 20 priority 101
+standby 20 preempt
+exit
+ROUTER ospf 1
+router-id 2.2.2.2
+network 200.200.200.0 0.0.0.3 area 0
+network 192.168.10.0 0.0.0.255 area 0
+network 192.168.20.0 0.0.0.255 area 0
+network 10.10.10.0 0.0.0.255 area 0
+
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+sw-3
+
+en
+conf t
+hostname sw-3
+spanning-tree mode rapid-pvst
+interface range gig 0/0 - 3
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk native vlan 2
+switchport nonegotiate
+do wr
+
+NEXT STEP
+
+EXIT
+vtp domain PEDRAM.LOACL
+vtp password 13761370
+VTP MODE SERVER
+vtp version 3
+exit
+vtp primary
+
+
+NEXT STEP
+CONF T
+VALN 2
+name IT-MANAGEMENT
+VLAN 20
+NAME FINANCE
+EXIT
+VLAN 10
+NAME EDUCATION
+EXIT
+ip default-gateway 10.10.10.1
+SPANNIG-TREE VLAN 10 ROOT PRIMARY
+SPANNIG-TREE VLAN 20 ROOT SECONDARY
+interface vlan 2
+no shut
+ip add	10.10.10.4 255.255.255.0
+exit
+interface vlan 10 
+no shut
+ip add 192.168.10.10 255.255.255.0
+exit
+interface vlan 20 
+no shut
+ip add 192.168.20.10 255.255.255.0
+exit
+ip dhcp pool vlan-2
+network 10.10.10.0 255.255.255.0
+default-router 10.10.10.1
+dns-server 8.8.8.8
+exit
+ip dhcp excluded-address 10.10.10.1 10.10.10.30
+ip dhcp pool vlan-10
+network 192.168.10.0 255.255.255.0
+default-router 192.168.10.1
+dns-server 8.8.8.8
+exit
+ip dhcp excluded-address 192.168.10.1 192.168.10.30
+ip dhcp pool vlan-20
+network 192.168.20.0 255.255.255.0
+default-router 192.168.20.1
+dns-server 8.8.8.8
+exit
+ip dhcp excluded-address 192.168.20.1 192.168.20.30
+do wr
+
+--------------------
+sw-4
+
+en
+conf t
+hostname sw-4
+spanning-tree mode rapid-pvst
+interface range gig 0/0 - 3
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk native vlan 2
+switchport nonegotiate
+do wr
+exit
+EXIT
+vtp domain PEDRAM.LOACL
+vtp password 13761370
+vtp MODE CLIENT
+vtp version 3
+int vlan 2
+no shut
+ip add 10.10.10.5 255.255.255.0
+ip default-gateway 10.10.10.1
+SPANNIG-TREE VLAN 10 ROOT SECONDARY
+SPANNIG-TREE VLAN 20 ROOT primary
+-----------------
+sw-5
+
+en
+conf t
+hostname sw-5
+spanning-tree mode rapid-pvst
+interface range gig 0/0 , gig 0/3
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk native vlan 2
+switchport nonegotiate
+do wr
+exit
+vtp domain PEDRAM.LOACL
+vtp password 13761370
+vtp MODE CLIENT
+vtp version 3
+exit
+int vlan 2
+no shut
+ip add 10.10.10.6 255.255.255.0
+
+ip default-gateway 10.10.10.1
+int gig 0/1
+switchport mode access
+switchport access vlan 10
+switchport port-security
+switchport port-security maximum 2
+switchport port-security violation restrict
+switchport port-security mac-address sticky
+
+int gig 0/2
+switchport mode access
+switchport access vlan 20
+switchport port-security
+switchport port-security maximum 2
+switchport port-security violation restrict
+switchport port-security mac-address sticky
+
+--------------------------
+sw-6
+
+en
+conf t
+hostname sw-6
+spanning-tree mode rapid-pvst
+interface range gig 0/0 , gig 0/3
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk native vlan 2
+switchport nonegotiate
+do wr
+exit
+vtp domain PEDRAM.LOACL
+vtp password 13761370
+vtp MODE CLIENT
+vtp version 3
+exit
+int vlan 2
+no shut
+ip add 10.10.10.7 255.255.255.0
+
+
+ip default-gateway 10.10.10.1
+int gig 0/1
+switchport mode access
+switchport access vlan 10
+switchport port-security
+switchport port-security maximum 5
+switchport port-security violation restrict
+switchport port-security mac-address sticky
+int gig 0/2
+switchport mode access
+switchport access vlan 20
+switchport port-security
+switchport port-security maximum 5
+switchport port-security violation restrict
+switchport port-security mac-address sticky
+int gig 1/0
+switchport mode access
+switchport access vlan 2 na
+switchport port-security
+switchport port-security maximum 5
+switchport port-security violation restrict
+switchport port-security mac-address sticky
+
