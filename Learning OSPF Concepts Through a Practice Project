@@ -1,0 +1,241 @@
+Project
+
+ ROUTER EDGE    vios s1 
+
+en
+conf t
+hostname route-edge-ASBR
+int fa 0/1
+no shut
+ip add 10.10.10.1 255.255.255.252
+int fa 0/0
+no shut
+ip add dhcp
+exit
+access-list 100 permit ip any any
+int fa 0/0
+ip nat outside
+int fa 0/1
+ip nat inside
+exit
+ip nat inside source list 100 interface fa 0/0 
+
+router ospf 1
+router-id 1.1.1.1
+exit
+int fa 0/0
+ip ospf 1 area 0 
+int fa 0/1
+ip ospf 1 area 0
+exit
+router ospf 1
+default-information originate always 
+do wr
+-------------------------------------------------------------------------------- 
+
+vios 2 - router middle - area 0
+
+
+en
+conf t
+hostname router-MIDDLE
+int gig 0/0
+no shut
+ip add 10.10.10.2 255.255.255.252
+int gig 0/1
+no shut
+ip add 10.10.90.1 255.255.255.252
+exit
+router ospf 1
+router-id 2.2.2.2
+exit
+int gig 0/1
+ip ospf 1 area 0 
+int gig 0/0
+ip ospf 1 area 0
+exit
+do wr 
+
+------------------------------------------------------------------------------------
+
+
+vios 9 - ABR - area 0 AND AREA 0
+
+
+en
+conf t
+hostname router-ABR
+int fa 0/0
+no shut
+ip add 10.10.90.2 255.255.255.252
+int fa 0/1
+no shut
+ip add 10.10.12.1 255.255.255.252
+exit
+router ospf 1
+router-id 3.3.3.3
+exit
+int fa 0/0
+ip ospf 1 area 0 
+int fa 0/1
+ip ospf 1 area 1
+exit
+router ospf 1
+area 1 virtual-link 5.5.5.5
+do wr
+------------------------------------------------------------ 
+
+vios 3 - router middle - area 1
+
+
+en
+conf t
+hostname router-MIDDLE-QOM
+int gig 0/0
+no shut
+ip add 10.10.12.2 255.255.255.252
+int gig 0/1
+no shut
+ip add 10.10.91.1 255.255.255.252
+exit
+router ospf 1
+router-id 4.4.4.4
+exit
+int gig 0/1
+ip ospf 1 area 1
+int gig 0/0
+ip ospf 1 area 1
+exit
+do wr
+-------------------------------------------------------------- 
+
+vios 8 - router middle - area 1 - 0 - 2 
+
+en
+conf t
+hostname router-ABR-0-1-2
+int fa 0/1
+no shut
+ip add 10.10.92.2 255.255.255.252
+int fa 0/0
+no shut
+ip add 10.10.91.2 255.255.255.252
+int fa 1/0
+no shut
+ip add 10.10.14.2 255.255.255.252
+exit
+router ospf 1
+router-id 5.5.5.5
+exit
+int fa 0/1
+ip ospf 1 area 0 
+int fa 0/0
+ip ospf 1 area 1
+int fa 1/0
+ip ospf 1 area 2
+exit
+router ospf 1
+area 1 virtual-link 3.3.3.3
+exit
+router ospf 1
+area 2 virtual-link 9.9.9.9
+do wr 
+
+------------------------------------------------------------------ 
+
+vios 7 - router middle - ANOTHER BRANCH - area 0
+
+
+en
+conf t
+hostname router-MIDDLE-NEW-BRANCH
+int gig 0/1
+no shut
+ip add 10.10.13.4 255.255.255.248
+int gig 0/0
+no shut
+ip add 10.10.92.1 255.255.255.252
+exit
+router ospf 1
+router-id 6.6.6.6
+exit
+int gig 0/1
+ip ospf 1 area 0
+EXIT
+int gig 0/0
+ip ospf 1 area 0
+exit
+do wr
+---------------------------------------------------------------
+
+
+SWITCH 
+
+EN
+CONF T
+hostname swHQ-ROUTER
+IP ROUTING
+VTP VERSION 2
+VTP DOMAIN PEDRAM.LOCAL
+VTP MODE SERVER 
+INT GIG 0/0
+NO SHUT
+NO SWITCHPORT
+IP ADD  10.10.13.3 255.255.255.248
+EXIT
+INT RANGE GIG 0/1 , GIG 0/3
+switchport TRUNK ENCAPSULATION DOT1Q
+switchport mode trunk
+CHANNEL-GROUP 11 MODE active
+exit
+INT RANGE GIG 1/0 , gig 0/2
+switchport TRUNK ENCAPSULATION DOT1Q
+switchport mode trunk
+CHANNEL-GROUP 12 MODE active
+exit
+spanning-tree mode pvst 
+ROuter ospf 1
+router-id 7.7.7.7
+exit
+do wr
+exit
+int vlan 10
+no shut
+ip add 192.168.0.1 255.255.255.0
+exit
+int vlan 20
+no shut
+ip add 192.168.1.1 255.255.255.0
+exit
+int vlan 30
+no shut
+ip add 192.168.2.1 255.255.255.0
+exit
+int vlan 40
+no shut
+ip add 192.168.3.1 255.255.255.0
+exit
+ip dhcp pool vlan-10
+network 192.168.0.0 255.255.255.0
+default-router 192.168.0.1
+dns-server 8.8.8.8
+exit
+ip dhcp excluded-address 192.168.0.1 192.168.0.25
+ip dhcp pool vlan-20
+network 192.168.1.0 255.255.255.0
+default-router 192.168.1.1
+dns-server 8.8.8.8
+exit
+ip dhcp excluded-address 192.168.1.1 192.168.1.25
+ip dhcp pool vlan-30
+network 192.168.2.0 255.255.255.0
+default-router 192.168.2.1
+dns-server 8.8.8.8
+exit
+ip dhcp excluded-address 192.168.2.1 192.168.2.25
+ip dhcp pool vlan-40
+network 192.168.3.0 255.255.255.0
+default-router 192.168.3.1
+dns-server 8.8.8.8
+exit
+ip dhcp excluded-address 192.168.3.1 192.168.3.25
