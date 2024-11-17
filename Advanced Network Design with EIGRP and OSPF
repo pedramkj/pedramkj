@@ -1,0 +1,241 @@
+R7 - REDIST POINT
+
+en
+conf t
+hostname R7
+int loop 0
+ip add 172.16.0.1 255.255.255.0
+int loop 1
+ip add 172.16.1.1 255.255.255.0
+int loop 2
+ip add 172.16.2.1 255.255.255.0
+int loop 3
+ip add 172.16.3.1 255.255.255.0
+exit
+int GIG 0/0
+no shut
+ip add 13.0.0.2 255.255.255.252
+exit
+router eigrp 100
+network 172.16.0.0 0.0.0.255
+network 172.16.1.0 0.0.0.255
+network 172.16.2.0 0.0.0.255
+network 172.16.3.0 0.0.0.255
+network 13.0.0.0 0.0.0.3
+do wr
+EXIT
+-----------------------------------
+r5
+
+en
+conf t
+hostname R5-ASBR
+int GIG 0/1
+no shut
+ip add 13.0.0.1 255.255.255.252
+exit
+int GIG 0/0
+no shut
+ip add 10.0.0.17 255.255.255.252
+router eigrp 100
+network 13.0.0.0 0.0.0.3
+exit
+router ospf 1
+router-id 5.5.5.5
+exit
+int gig 0/0
+ip ospf 1 area 1
+do wr
+EXIT
+ip prefix-list EIGRP-TO-OSPF permit 172.16.0.0/16 ge 24
+route-map EIGRP100-TO-OSPF permit 10
+match ip address prefix-list EIGRP-TO-OSPF
+SET TAG 100
+exit
+route-map EIGRP100-TO-OSPF permit 20
+router ospf 1
+redistribute eigrp 100 route-map EIGRP100-TO-OSPF subnets metric-type 1
+exit
+route-map blocked-EIGRP50 deny 5
+match tag 50
+EXIT
+route-map blocked-EIGRP50 permit 15
+exit
+router eigrp 100
+redistribute OSPF 1 route-map blocked-EIGRP50  metric 10000 100 255 1 1500
+exit
+router ospf 1
+area 1 nssa
+-------------------------------------------------------------
+
+R6
+
+en
+conf t
+hostname R6-ASBR
+int GIG 0/1
+no shut
+ip add 12.0.0.1 255.255.255.252
+exit
+int GIG 0/0
+no shut
+ip add 10.0.0.13 255.255.255.252
+exit
+router eigrp 50
+network 12.0.0.0 0.0.0.3
+exit
+router ospf 1
+router-id 6.6.6.6
+exit
+int gig 0/0
+ip ospf 1 area 1
+do wr
+EXIT
+ip prefix-list EIGRP-TO-OSPF permit 192.168.0.0/16 ge 24
+route-map EIGRP50-TO-OSPF permit 10
+match ip address prefix-list EIGRP-TO-OSPF
+SET TAG 50
+exit
+route-map EIGRP50-TO-OSPF permit 20
+router ospf 1
+redistribute eigrp 50 route-map EIGRP50-TO-OSPF subnets metric-type 1
+exit
+route-map blocked-EIGRP50 deny 5
+match tag 100
+exit
+route-map blocked-EIGRP50 permit 15
+exit
+router eigrp 50
+redistribute OSPF 1 route-map blocked-EIGRP50  metric 10000 100 255 1 1500
+exit
+router ospf 1
+area 1 nssa
+do wr
+---------------------------------------------------------------
+
+R8
+
+en
+conf t
+hostname R8
+int loop 0
+ip add 192.168.0.1 255.255.255.0
+int loop 1
+ip add 192.168.1.1 255.255.255.0
+int loop 2
+ip add 192.168.2.1 255.255.255.0
+int loop 3
+ip add 192.168.3.1 255.255.255.0
+exit
+int GIG 0/0
+no shut
+ip add 12.0.0.2 255.255.255.252
+exit
+router eigrp 50
+network 192.168.0.0 0.0.0.255
+network 192.168.1.0 0.0.0.255
+network 192.168.2.0 0.0.0.255
+network 192.168.3.0 0.0.0.255
+network 12.0.0.0 0.0.0.3
+do wr
+EXIT
+
+-----------------------------------------------------------------------
+
+R4
+
+EN
+CONF T
+hostname R4-ABR
+int GIG 0/1
+no shut
+ip add 10.0.0.18 255.255.255.252
+exit
+int GIG 0/0
+no shut
+ip add 10.0.0.14 255.255.255.252
+exit
+int gig 0/2
+no shut
+ip add 10.0.0.9 255.255.255.252
+router ospf 1
+router-id 4.4.4.4
+exit
+int range gig 0/0 - 1 
+ip ospf 1 area 1
+exit
+int gig 0/2
+ip ospf 1 area 0
+
+
+--------------------------------------------------
+R1
+
+EN
+CONF T
+hostname R1-ABR
+int GIG 0/0
+no shut
+ip add 10.0.0.10 255.255.255.252
+exit
+int GIG 0/2
+no shut
+ip add 10.0.0.1 255.255.255.252
+exit
+int gig 0/1
+no shut
+ip add 10.0.0.5 255.255.255.252
+router ospf 1
+router-id 1.1.1.1
+exit
+int gig 0/0
+ip ospf 1 area 0
+exit
+int gig 0/2
+ip ospf 1 area 3
+EXIT
+int gig 0/1
+ip ospf 1 area 4
+EXIT
+router ospf 1
+area 4 stub no-summary
+area 3 stub
+do wr
+-----------------------------------------------------
+R2
+
+EN
+CONF T
+hostname R2
+int GIG 0/0
+no shut
+ip add 10.0.0.2 255.255.255.252
+exit
+router ospf 1
+router-id 2.2.2.2
+exit
+int gig 0/0
+ip ospf 1 area 3
+exit
+router ospf 1
+area 3 stub
+do wr
+--------------------------------------------
+R3
+
+EN
+CONF T
+hostname R3
+int GIG 0/0
+no shut
+ip add 10.0.0.6 255.255.255.252
+exit
+router ospf 1
+router-id 3.3.3.3
+exit
+int gig 0/0
+ip ospf 1 area 4
+exit
+router ospf 1
+area 1 nssa
+do wr   
